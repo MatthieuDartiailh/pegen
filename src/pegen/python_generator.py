@@ -1,5 +1,7 @@
+import ast
+import re
 import token
-from typing import IO, Any, Dict, Optional, Text, Tuple
+from typing import IO, Any, Dict, Optional, Set, Text, Tuple
 
 from pegen import grammar
 from pegen.grammar import (
@@ -47,6 +49,8 @@ class PythonCallMakerVisitor(GrammarVisitor):
     def __init__(self, parser_generator: ParserGenerator):
         self.gen = parser_generator
         self.cache: Dict[Any, Any] = {}
+        self.keywords: Dict[str, int] = dict()
+        self.soft_keywords: Set[str] = set()
 
     def visit_NameLeaf(self, node: NameLeaf) -> Tuple[Optional[str], str]:
         name = node.value
@@ -59,6 +63,12 @@ class PythonCallMakerVisitor(GrammarVisitor):
         return name, f"self.{name}()"
 
     def visit_StringLeaf(self, node: StringLeaf) -> Tuple[str, str]:
+        val = ast.literal_eval(node.value)
+        if re.match(r"[a-zA-Z_]\w*\Z", val):  # This is a keyword
+            if node.value.endswith("'") and node.value not in self.keywords:
+                self.keywords[val] = self.gen.keyword_type()
+            else:
+                self.soft_keywords.add(val)
         return "literal", f"self.expect({node.value})"
 
     def visit_Rhs(self, node: Rhs) -> Tuple[Optional[str], str]:
@@ -155,6 +165,12 @@ class PythonParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print()
                 with self.indent():
                     self.visit(rule)
+
+        self.print()
+        with self.indent():
+            self.print(f"KEYWORDS = {self.callmakervisitor.keywords}")
+            self.print(f"SOFT_KEYWORDS = {tuple(self.callmakervisitor.soft_keywords)}")
+
         trailer = self.grammar.metas.get("trailer", MODULE_SUFFIX)
         if trailer is not None:
             self.print(trailer.rstrip("\n"))

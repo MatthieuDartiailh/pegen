@@ -5,9 +5,9 @@ import token
 import tokenize
 import traceback
 from abc import abstractmethod
-from typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, Callable, ClassVar, Dict, Optional, Tuple, Type, TypeVar, cast
 
-from pegen.tokenizer import Mark, Tokenizer, exact_token_types
+from pegen.tokenizer import Mark, Tokenizer
 
 T = TypeVar("T")
 P = TypeVar("P", bound="Parser")
@@ -59,15 +59,15 @@ def memoize(method: F) -> F:
             self._level += 1
             tree = method(self, *args)
             self._level -= 1
-            if verbose:
-                print(f"{fill}... {method_name}({argsr}) -> {tree!s:.200}")
-            endmark = self.mark()
+            # if verbose:
+            #     print(f"{fill}... {method_name}({argsr}) -> {tree!s:.200}")
+            endmark = self._mark()
             self._cache[key] = tree, endmark
         else:
             tree, endmark = self._cache[key]
-            if verbose:
-                print(f"{fill}{method_name}({argsr}) -> {tree!s:.200}")
-            self.reset(endmark)
+            # if verbose:
+                # print(f"{fill}{method_name}({argsr}) -> {tree!s:.200}")
+            self._reset(endmark)
         return tree
 
     memoize_wrapper.__wrapped__ = method  # type: ignore
@@ -155,8 +155,13 @@ def memoize_left_rec(method: Callable[[P], Optional[T]]) -> Callable[[P], Option
 class Parser:
     """Parsing base class."""
 
+    KEYWORDS: ClassVar[Dict[str, int]]
+
+    SOFT_KEYWORDS: ClassVar[Tuple[str, ...]]
+
     def __init__(self, tokenizer: Tokenizer, *, verbose: bool = False):
         self._tokenizer = tokenizer
+        tokenizer.install_keyword_handling(self.KEYWORDS)
         self._verbose = verbose
         self._level = 0
         self._cache: Dict[Tuple[Mark, str, Tuple[Any, ...]], Tuple[Any, Mark]] = {}
@@ -171,7 +176,7 @@ class Parser:
 
     def showpeek(self) -> str:
         tok = self._tokenizer.peek()
-        return f"{tok.start[0]}.{tok.start[1]}: {token.tok_name[tok.type]}:{tok.string!r}"
+        return f"{tok.start[0]}.{tok.start[1]}: {token.tok_name.get(tok.type, tok.string.upper())}:{tok.string!r}"
 
     @memoize
     def name(self) -> Optional[tokenize.TokenInfo]:
@@ -213,8 +218,8 @@ class Parser:
         tok = self._tokenizer.peek()
         if tok.string == type:
             return self._tokenizer.getnext()
-        if type in exact_token_types:
-            if tok.type == exact_token_types[type]:
+        if type in self._tokenizer.exact_token_types:
+            if tok.type == self._tokenizer.exact_token_types[type]:
                 return self._tokenizer.getnext()
         if type in token.__dict__:
             if tok.type == token.__dict__[type]:

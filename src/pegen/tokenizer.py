@@ -1,10 +1,8 @@
 import token
 import tokenize
-from typing import Iterator, List
+from typing import Dict, Iterator, List, Set
 
 Mark = int  # NewType('Mark', int)
-
-exact_token_types = token.EXACT_TOKEN_TYPES
 
 
 def shorttok(tok: tokenize.TokenInfo) -> str:
@@ -20,10 +18,12 @@ class Tokenizer:
     _tokens: List[tokenize.TokenInfo]
 
     def __init__(self, tokengen: Iterator[tokenize.TokenInfo], *, verbose: bool = False):
+        self.exact_token_types = token.EXACT_TOKEN_TYPES.copy()
         self._tokengen = tokengen
         self._tokens = []
         self._index = 0
         self._verbose = verbose
+        self._keywords: Dict[str, int] = dict()
         if verbose:
             self.report(False, False)
 
@@ -36,7 +36,7 @@ class Tokenizer:
                 continue
             if tok.type == token.ERRORTOKEN and tok.string.isspace():
                 continue
-            self._tokens.append(tok)
+            self._tokens.append(self.update_token_type(tok))
             cached = False
         tok = self._tokens[self._index]
         self._index += 1
@@ -52,7 +52,7 @@ class Tokenizer:
                 continue
             if tok.type == token.ERRORTOKEN and tok.string.isspace():
                 continue
-            self._tokens.append(tok)
+            self._tokens.append(self.update_token_type(tok))
         return self._tokens[self._index]
 
     def diagnose(self) -> tokenize.TokenInfo:
@@ -62,6 +62,21 @@ class Tokenizer:
 
     def mark(self) -> Mark:
         return self._index
+
+    def install_keyword_handling(self, keywords: Dict[str, int]) -> None:
+        self._keywords = keywords
+        self.exact_token_types.update(keywords)
+
+    def update_token_type(self, tok: tokenize.TokenInfo) -> tokenize.TokenInfo:
+        if tok.type == tokenize.NAME and tok.string in self._keywords:
+            tok = tokenize.TokenInfo(
+                type=self._keywords[tok.string],
+                string=tok.string,
+                start=tok.start,
+                end=tok.end,
+                line=tok.line
+            )
+        return tok
 
     def reset(self, index: Mark) -> None:
         if index == self._index:
