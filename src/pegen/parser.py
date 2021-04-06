@@ -155,13 +155,12 @@ def memoize_left_rec(method: Callable[[P], Optional[T]]) -> Callable[[P], Option
 class Parser:
     """Parsing base class."""
 
-    KEYWORDS: ClassVar[Dict[str, int]]
+    KEYWORDS: ClassVar[Tuple[str, ...]]
 
     SOFT_KEYWORDS: ClassVar[Tuple[str, ...]]
 
     def __init__(self, tokenizer: Tokenizer, *, verbose: bool = False):
         self._tokenizer = tokenizer
-        tokenizer.install_keyword_handling(self.KEYWORDS)
         self._verbose = verbose
         self._level = 0
         self._cache: Dict[Tuple[Mark, str, Tuple[Any, ...]], Tuple[Any, Mark]] = {}
@@ -180,7 +179,7 @@ class Parser:
     @memoize
     def name(self) -> Optional[tokenize.TokenInfo]:
         tok = self._tokenizer.peek()
-        if tok.type == token.NAME:
+        if tok.type == token.NAME and tok.string not in self.KEYWORDS:
             return self._tokenizer.getnext()
         return None
 

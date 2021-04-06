@@ -49,7 +49,7 @@ class PythonCallMakerVisitor(GrammarVisitor):
     def __init__(self, parser_generator: ParserGenerator):
         self.gen = parser_generator
         self.cache: Dict[Any, Any] = {}
-        self.keywords: Dict[str, int] = dict()
+        self.keywords: Str[str] = set()
         self.soft_keywords: Set[str] = set()
 
     def visit_NameLeaf(self, node: NameLeaf) -> Tuple[Optional[str], str]:
@@ -66,7 +66,7 @@ class PythonCallMakerVisitor(GrammarVisitor):
         val = ast.literal_eval(node.value)
         if re.match(r"[a-zA-Z_]\w*\Z", val):  # This is a keyword
             if node.value.endswith("'") and node.value not in self.keywords:
-                self.keywords[val] = self.gen.keyword_type()
+                self.keywords.add(val)
             else:
                 self.soft_keywords.add(val)
         return "literal", f"self.expect({node.value})"
@@ -158,6 +158,10 @@ class PythonParserGenerator(ParserGenerator, GrammarVisitor):
         if subheader:
             self.print(subheader)
         cls_name = self.grammar.metas.get("class", "GeneratedParser")
+        self.print(
+            "# Keywords and soft keywords are listed at the end\n"
+            "# of the parser definition."
+        )
         self.print(f"class {cls_name}(Parser):")
         while self.todo:
             for rulename, rule in list(self.todo.items()):
@@ -168,7 +172,7 @@ class PythonParserGenerator(ParserGenerator, GrammarVisitor):
 
         self.print()
         with self.indent():
-            self.print(f"KEYWORDS = {self.callmakervisitor.keywords}")
+            self.print(f"KEYWORDS = {tuple(self.callmakervisitor.keywords)}")
             self.print(f"SOFT_KEYWORDS = {tuple(self.callmakervisitor.soft_keywords)}")
 
         trailer = self.grammar.metas.get("trailer", MODULE_SUFFIX)
