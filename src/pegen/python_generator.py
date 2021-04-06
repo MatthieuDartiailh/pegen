@@ -148,7 +148,7 @@ class PythonParserGenerator(ParserGenerator, GrammarVisitor):
         tokens: Dict[int, str] = token.tok_name,
     ):
         super().__init__(grammar, tokens, file)
-        self.callmakervisitor : PythonCallMakerVisitor = PythonCallMakerVisitor(self)
+        self.callmakervisitor: PythonCallMakerVisitor = PythonCallMakerVisitor(self)
 
     def generate(self, filename: str) -> None:
         header = self.grammar.metas.get("header", MODULE_PREFIX)
