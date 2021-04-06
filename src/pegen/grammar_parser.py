@@ -41,8 +41,7 @@ from pegen.grammar import (
 
 class GeneratedParser(Parser):
 
-    KEYWORDS = {}
-
+    KEYWORDS = ()
     SOFT_KEYWORDS = ()
 
     @memoize

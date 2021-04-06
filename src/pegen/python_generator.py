@@ -49,7 +49,7 @@ class PythonCallMakerVisitor(GrammarVisitor):
     def __init__(self, parser_generator: ParserGenerator):
         self.gen = parser_generator
         self.cache: Dict[Any, Any] = {}
-        self.keywords: Str[str] = set()
+        self.keywords: Set[str] = set()
         self.soft_keywords: Set[str] = set()
 
     def visit_NameLeaf(self, node: NameLeaf) -> Tuple[Optional[str], str]:
@@ -148,7 +148,7 @@ class PythonParserGenerator(ParserGenerator, GrammarVisitor):
         tokens: Dict[int, str] = token.tok_name,
     ):
         super().__init__(grammar, tokens, file)
-        self.callmakervisitor = PythonCallMakerVisitor(self)
+        self.callmakervisitor : PythonCallMakerVisitor = PythonCallMakerVisitor(self)
 
     def generate(self, filename: str) -> None:
         header = self.grammar.metas.get("header", MODULE_PREFIX)
