@@ -59,14 +59,14 @@ def memoize(method: F) -> F:
             self._level += 1
             tree = method(self, *args)
             self._level -= 1
-            # if verbose:
-            #     print(f"{fill}... {method_name}({argsr}) -> {tree!s:.200}")
+            if verbose:
+                print(f"{fill}... {method_name}({argsr}) -> {tree!s:.200}")
             endmark = self._mark()
             self._cache[key] = tree, endmark
         else:
             tree, endmark = self._cache[key]
-            # if verbose:
-                # print(f"{fill}{method_name}({argsr}) -> {tree!s:.200}")
+            if verbose:
+                print(f"{fill}{method_name}({argsr}) -> {tree!s:.200}")
             self._reset(endmark)
         return tree
 

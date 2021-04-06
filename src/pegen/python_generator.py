@@ -158,10 +158,7 @@ class PythonParserGenerator(ParserGenerator, GrammarVisitor):
         if subheader:
             self.print(subheader)
         cls_name = self.grammar.metas.get("class", "GeneratedParser")
-        self.print(
-            "# Keywords and soft keywords are listed at the end\n"
-            "# of the parser definition."
-        )
+        self.print("# Keywords and soft keywords are listed at the end of the parser definition.")
         self.print(f"class {cls_name}(Parser):")
         while self.todo:
             for rulename, rule in list(self.todo.items()):
