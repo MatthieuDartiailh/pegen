@@ -229,7 +229,7 @@ class Parser:
     def expect_forced(self, type: str) -> Optional[tokenize.TokenInfo]:
         res = self.expect(type)
         if res is None:
-            self.make_syntax_error(f"expected {type}", )
+            self.make_syntax_error(f"expected {type}")
         return res
 
     def positive_lookahead(self, func: Callable[..., T], *args: object) -> T:
@@ -244,11 +244,9 @@ class Parser:
         self._reset(mark)
         return not ok
 
-    def make_syntax_error(self, message:str, filename: str = "<unknown>") -> SyntaxError:
+    def make_syntax_error(self, message: str, filename: str = "<unknown>") -> SyntaxError:
         tok = self._tokenizer.diagnose()
-        return SyntaxError(
-            message, (filename, tok.start[0], 1 + tok.start[1], tok.line)
-        )
+        return SyntaxError(message, (filename, tok.start[0], 1 + tok.start[1], tok.line))
 
 
 def simple_parser_main(parser_class: Type[Parser]) -> None:

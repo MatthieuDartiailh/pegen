@@ -42,7 +42,7 @@ def run_parser(file: IO[bytes], parser_class: Type[Parser], *, verbose: bool = F
     parser = parser_class(tokenizer, verbose=verbose)
     result = parser.start()
     if result is None:
-        raise parser.make_syntax_error()
+        raise parser.make_syntax_error("Invalid syntax")
     return result
 
 
