@@ -151,9 +151,15 @@ class PythonParserGenerator(ParserGenerator, GrammarVisitor):
         grammar: grammar.Grammar,
         file: Optional[IO[Text]],
         tokens: Dict[int, str] = token.tok_name,
+        location_formatting: Optional[str] = None,
     ):
         super().__init__(grammar, tokens, file)
         self.callmakervisitor: PythonCallMakerVisitor = PythonCallMakerVisitor(self)
+        self.location_formatting = (
+            location_formatting
+            or "start_lineno=start_lineno, start_col_offset=start_col_offset, "
+            "end_lineno=end_lineno, end_col_offset=end_col_offset"
+        )
 
     def generate(self, filename: str) -> None:
         header = self.grammar.metas.get("header", MODULE_PREFIX)
@@ -201,6 +207,9 @@ class PythonParserGenerator(ParserGenerator, GrammarVisitor):
             if node.nullable:
                 self.print(f"# nullable={node.nullable}")
             self.print("mark = self._mark()")
+            if any(alt.action and "LOCATIONS" in alt.action for alt in node.rhs.alts):
+                self.print("tok = self._tokenizer.peek()")
+                self.print("start_lineno, start_col_offset = tok.start")
             if is_loop:
                 self.print("children = []")
             self.visit(rhs, is_loop=is_loop, is_gather=is_gather)
@@ -258,6 +267,10 @@ class PythonParserGenerator(ParserGenerator, GrammarVisitor):
                             action = f"{self.local_variable_names[0]}"
                         else:
                             action = f"[{', '.join(self.local_variable_names)}]"
+                elif "LOCATIONS" in node.action:
+                    self.print("tok = self._tokenizer.get_last_non_whitespace_token()")
+                    self.print("end_lineno, end_col_offset = tok.end")
+                    action = action.replace("LOCATIONS", self.location_formatting)
                 if is_loop:
                     self.print(f"children.append({action})")
                     self.print(f"mark = self._mark()")

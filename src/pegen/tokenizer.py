@@ -60,6 +60,18 @@ class Tokenizer:
             self.getnext()
         return self._tokens[-1]
 
+    def get_last_non_whitespace_token(self) -> tokenize.TokenInfo:
+        index = -1
+        l_tokens = len(self._tokens)
+        while -index < l_tokens:
+            tok = self._tokens[index]
+            if tok.type != tokenize.ENDMARKER and (
+                tok.type < tokenize.NEWLINE or tok.type > tokenize.DEDENT
+            ):
+                break
+            index -= 1
+        return tok
+
     def mark(self) -> Mark:
         return self._index
 
